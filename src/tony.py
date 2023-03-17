@@ -8,7 +8,7 @@ import time
 favorite_words = ['t-dawg', 'lawn', 'fox', 'fox news', 'yankees', 'mets', 'baseball', 'landscaping', 'china', 'trump', 'biden', 'obama',
                   'playoffs', 'rangers', 'new york', 'new york city', 'george foreman', 'bbq', 'grill', 'pizza', 'america', 'angie',
                   'long island', 'the dogs', 'tony', 'the wife', 'cuomo', 'nypd', 'boys in blue', 'the troops', 'italian', 'gabagool',
-                  'mow', 'mowing',]
+                  'mow', 'mowing', 'beer',]
 
 direct_words = ["you", "your", "yours", "u", "ur", "urs", "youre", "you\'re"]
 
@@ -93,7 +93,6 @@ class Tony:
             content = tony_context[1].content
 
         prompt = self._create_tony_prompt(prompt_type, content=content, tony_response=tony_response)
-        print(f'PROMPT: {prompt}')
         response = ""
         try:
             response = openai.Completion.create(engine=self.engine,
@@ -105,7 +104,6 @@ class Tony:
             self.slowdown_exp = 1
         except (openai.APIError, openai.error.ServiceUnavailableError) as e:
             response = "bababooey"
-            print(e.args)
             time.sleep(10*self.slowdown_exp)
             self.slowdown_exp *= 2
         if not response:
