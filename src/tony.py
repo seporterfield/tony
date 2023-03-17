@@ -7,7 +7,8 @@ import time
 
 favorite_words = ['t-dawg', 'lawn', 'fox', 'fox news', 'yankees', 'mets', 'baseball', 'landscaping', 'china', 'trump', 'biden', 'obama',
                   'playoffs', 'rangers', 'new york', 'new york city', 'george foreman', 'bbq', 'grill', 'pizza', 'america', 'angie',
-                  'long island', 'the dogs', 'tony', 'the wife', 'cuomo', 'nypd', 'boys in blue', 'the troops', 'italian', 'gabagool',]
+                  'long island', 'the dogs', 'tony', 'the wife', 'cuomo', 'nypd', 'boys in blue', 'the troops', 'italian', 'gabagool',
+                  'mow', 'mowing',]
 
 direct_words = ["you", "your", "yours", "u", "ur", "urs", "youre", "you\'re"]
 
@@ -31,7 +32,7 @@ tony_context = "you will come up with a response as one of the members of this d
 response_context = "The message you will respond to is the following: <"
 question_context_1 = "A user has posted this message: <"
 question_context_2 = "Tony responded: <"
-system_prompt_random = " Talk about whatever you want, as Tony."
+system_prompt_random = " Talk about some random topic in the news or about an event in Tony's daily life, as Tony."
 
 tony_tokens = ["<tony>", "<Tony>", "<TONY>"]
 
@@ -119,7 +120,7 @@ class Tony:
         current_is_bot = message.author == self.client.user
         prev_is_bot = prev_messages[1].author == self.client.user
         prev_addressed = any(
-            direct_word in words for direct_word in direct_words) or words[0] in question_words
+            direct_word in words for direct_word in direct_words) or words[0] in question_words or "?" in words[-1]
         
         if current_is_bot and prev_is_bot:
             return TonyResponse.SILENCE
@@ -128,8 +129,6 @@ class Tony:
                 return TonyResponse.QUESTION
             else:
                 return TonyResponse.SILENCE
-        elif prev_is_bot and prev_addressed:
-            return TonyResponse.DIRECT
         elif re.search(r'<:\w*:\d*>', message.content):
             return TonyResponse.SILENCE
         elif message.mention_everyone:
@@ -138,10 +137,17 @@ class Tony:
             return TonyResponse.AT_TONY
         elif any(word in message.content.lower() for word in favorite_words):
             return TonyResponse.FAVORITE_WORD
-        else:
-            if random.randint(1, self.random_odds) == 1:
-                return TonyResponse.RANDOM
+        elif message.mentions and self.client.user not in message.mentions:
             return TonyResponse.SILENCE
+        elif prev_is_bot and prev_addressed:
+            return TonyResponse.DIRECT
+        else:
+            if random.randint(1, self.random_odds) != 1:
+                return TonyResponse.SILENCE
+            if self.client.user in [msg.author async for msg in message.channel.history(limit=20)]:
+                return TonyResponse.SILENCE
+            return TonyResponse.RANDOM
+            
 
     def clean_response(self, response: str) -> str:
         for token in tony_tokens:
