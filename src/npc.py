@@ -6,6 +6,8 @@ from collections import deque
 from logging import Logger
 import json
 import asyncio
+import yaml
+from yaml.loader import SafeLoader
 
 RANDOM_RESPONSE_ODDS = 40
 
@@ -23,8 +25,31 @@ class NPC:
     @classmethod
     def make_description(cls, name, username, age, gender, setting, job, personality, context):
         return f" Name: {name}, Username: {username}, Age: {age}, Gender: {gender}, " + \
-            f"Setting: {setting}, Job: {job}, Personality traits: {'-'.join(personality)}, " + \
+            f"Setting: {setting}, Job: {job}, Personality traits: {'---'.join(personality)}, " + \
             f"Additional context: {'---'.join(context)}. "
+            
+    @classmethod
+    def from_yaml(cls, filepath: str, client: discord.Client, logger: Logger = None, channel: discord.TextChannel = None):
+        data = None
+        with open(filepath) as f:
+            data = yaml.load(f, Loader=SafeLoader)
+        if data == None:
+            raise Exception("Bad NPC config yaml file: %s", filepath)
+        return NPC(client=client,
+                   history_length=data['history_length'],
+                   name=data['name'],
+                   username=data['username'],
+                   age=data['age'],
+                   gender=data['gender'],
+                   setting=data['setting'],
+                   job=data['job'],
+                   personality=data['personality'],
+                   context=data['context'],
+                   model=data['model'],
+                   temperature=data['temperature'],
+                   frequency_penalty=data['frequency_penalty'],
+                   channel=channel,
+                   logger=logger)
     
     def __init__(self,
                  client: discord.Client,
@@ -72,7 +97,7 @@ class NPC:
             "You always respond in the format of a verbal conversation, " + \
             "never narrating, never putting your own words in quotes, never anything out of character whatsoever. You always start your message " + \
             f"with {self.username}:, and only respond with a single message, which will be attributed to {self.username}. " + \
-            f"Remember, you only respond with a SINGLE message. NEVER pretend to be others. If you respond to yourself, don't repeat yourself." 
+            f"Remember, you only respond with a SINGLE message. NEVER pretend to be others. NEVER repeat what you see in the chat." 
     
     def npc_sees_message(self, message: discord.Message) -> bool:
         return message.content.strip() != ""
