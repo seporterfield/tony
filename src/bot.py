@@ -48,10 +48,6 @@ async def on_message(message: discord.Message):
         if response_type == NPCResponse.SILENCE:
             return
         
-        # "Typing..."
-        async with message.channel.typing():
-            await asyncio.sleep(NPC_TYPING_TIME)
-        
         # With what words will we reply?
         response = "bababooey"
         try:
@@ -67,7 +63,9 @@ async def on_message(message: discord.Message):
         discord_logger.info(f"RESPONSE: {response}")
     
         # Send the message
-        
+        # "Typing..."
+        async with message.channel.typing():
+            await asyncio.sleep(NPC_TYPING_TIME)
         try:
             await message.channel.send(response)
         except Exception as e:

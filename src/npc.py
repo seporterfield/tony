@@ -89,7 +89,8 @@ class NPC:
         self.logger = logger
         
         self.messages = deque()
-        self.consecutive_message_limit = 4
+        self.consecutive_message_limit = 2
+        self.is_afk = True
     
     def make_system_message(self) -> str:
         return f"You are {self.username}, an NPC in a videogame that takes place in a Discord server. " + \
@@ -97,8 +98,8 @@ class NPC:
             "You always respond in the format of a verbal conversation, " + \
             "never narrating, never putting your own words in quotes, never anything out of character whatsoever. You always start your message " + \
             f"with {self.username}:, and only respond with a single message, which will be attributed to {self.username}. " + \
-            f"Remember, you only respond with a SINGLE message. NEVER pretend to be others. NEVER repeat what you see in the chat. " + \
-            "Vary your vocabulary, and talk about your life when you are stuck." 
+            f"Remember, you only respond with a SINGLE message. NEVER pretend to be others. NEVER repeat your messages. " + \
+            f"Vary your vocabulary, and talk about your life when you are stuck. If {self.username} would not respond, reply only with '(AFK)'" 
     
     def npc_sees_message(self, message: discord.Message) -> bool:
         return message.content.strip() != ""
@@ -125,7 +126,7 @@ class NPC:
         
     def is_chat_relevant(self) -> bool:
         for msg in self.messages:
-            if msg.author.id == self.client.user.id:
+            if msg.author.id == self.client.user.id and not self.is_afk:
                 return True
             elif self.client.user.mentioned_in(msg):
                 return True
@@ -162,19 +163,6 @@ class NPC:
             print(e.args)
         return response
     
-    async def is_response_appropriate(self) -> bool:
-        # We're gonna run this through another OpenAI Prompt.
-        system_prompt = "You are provided with a chat history, and you must judge how likely it is that " + \
-                        "the a future response in this discord channel will " + \
-                        f"come from the user described as follows: <{self.description}>. Please answer " + \
-                        "concisely with either a number from 1 to 9. Do respond with anything else."
-        completion_messages = self.make_completion_messages(system_prompt, mode=NPCPromptMode.RELEVANCE_CHECKER)
-        
-        response = await asyncio.to_thread(self.prompt_openai, completion_messages)
-        for i in range(4,10):
-            if str(i) in response:
-                return True
-        return False
     
     async def get_response_type(self) -> NPCResponse:
         if not self.is_chat_relevant():
@@ -184,9 +172,7 @@ class NPC:
                 return NPCResponse.SILENCE
         if self.consecutive_msg_limit_reached():
             return NPCResponse.SILENCE
-        if await self.is_response_appropriate():
-            return NPCResponse.DIRECT
-        return NPCResponse.SILENCE
+        return NPCResponse.DIRECT
     
     async def prompt(self) -> str:
         completion_messages = self.make_completion_messages(self.system_message, mode=NPCPromptMode.NPC)
@@ -194,6 +180,12 @@ class NPC:
         return response
     
     def clean_response(self, response: str) -> str:
+        if "(afk)" in response.lower():
+            self.is_afk = True
+            response = ""
+        else:
+            self.is_afk = False
+            
         pieces = response.split(":")
         if len(pieces) > 1:
             response = " ".join(pieces[1:])
