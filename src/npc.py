@@ -89,7 +89,7 @@ class NPC:
         self.logger = logger
         
         self.messages = deque()
-        self.consecutive_message_limit = 2
+        self.consecutive_message_limit = 4
     
     def make_system_message(self) -> str:
         return f"You are {self.username}, an NPC in a videogame that takes place in a Discord server. " + \
@@ -97,7 +97,8 @@ class NPC:
             "You always respond in the format of a verbal conversation, " + \
             "never narrating, never putting your own words in quotes, never anything out of character whatsoever. You always start your message " + \
             f"with {self.username}:, and only respond with a single message, which will be attributed to {self.username}. " + \
-            f"Remember, you only respond with a SINGLE message. NEVER pretend to be others. NEVER repeat what you see in the chat." 
+            f"Remember, you only respond with a SINGLE message. NEVER pretend to be others. NEVER repeat what you see in the chat. " + \
+            "Vary your vocabulary, and talk about your life when you are stuck." 
     
     def npc_sees_message(self, message: discord.Message) -> bool:
         return message.content.strip() != ""
