@@ -91,6 +91,8 @@ class NPC:
         self.messages = deque()
         self.consecutive_message_limit = 2
         self.is_afk = True
+        self.afk_limit = history_length-1
+        self.missed_messages = 0
     
     def make_system_message(self) -> str:
         return f"You are {self.username}, an NPC in a videogame that takes place in a Discord server. " + \
@@ -106,6 +108,8 @@ class NPC:
     
     def update_messages(self, message: discord.Message) -> None:        
         if self.npc_sees_message(message):
+            if message.author.id == self.client.user.id:
+                self.missed_messages = 0
             self.messages.appendleft(message)
             if len(self.messages) >= self.history_length:
                 self.messages.pop()
@@ -125,13 +129,39 @@ class NPC:
         return num_consecutive >= self.consecutive_message_limit
         
     def is_chat_relevant(self) -> bool:
-        for msg in self.messages:
+        prev_was_user = True
+        for idx, msg in enumerate(self.messages):
+            # Has the npc been chatting recently, and not been AFK?
             if msg.author.id == self.client.user.id and not self.is_afk:
                 return True
+            # Is the npc mentioned in a recent message?
             elif self.client.user.mentioned_in(msg):
                 return True
+            # Is everyone mentioned in a recent message?
             elif msg.mention_everyone:
                 return True
+            # Is the msg from the npc, currently afk?
+            elif msg.author.id == self.client.user.id:
+                prev_was_user = False
+            # Were all chats up until the afk limit other users? (comes back from AFK)
+            elif msg.author.id != self.client.user.id:
+                # Are we in the chain of most recent user chats below the limit?
+                if prev_was_user and idx < self.afk_limit-1:
+                    self.missed_messages +=1
+                # Did we reach the limit?
+                elif prev_was_user:
+                    self.missed_messages = 0
+                    self.is_afk = False
+                    return True
+                else: # Should never trigger.
+                    pass
+                prev_was_user = True
+            # Mentions message written by npc (leave last)
+            elif msg.reference != None:
+                if msg.channel.fetch_message(msg.reference.message_id).author.id == self.client.user.id:
+                    return True
+            else:
+                pass
         return False
     
     def make_completion_messages(self, system_prompt: str, mode: NPCPromptMode = NPCPromptMode.RELEVANCE_CHECKER) -> list[dict]:
@@ -153,14 +183,10 @@ class NPC:
     def prompt_openai(self, completion_messages: list[dict]) -> str:
         assert(len(json.dumps(completion_messages)) <= 15000)
         assert(len(completion_messages) != 0)
-        response = "bababooey"
-        try:
-            response = openai.ChatCompletion.create(model=self.model, messages=completion_messages,
-                                                max_tokens=200, temperature=self.temperature,
-                                                frequency_penalty=self.frequency_penalty)
-            response = response.choices[0].message.content
-        except Exception as e:
-            print(e.args)
+        response = openai.ChatCompletion.create(model=self.model, messages=completion_messages,
+                                            max_tokens=200, temperature=self.temperature,
+                                            frequency_penalty=self.frequency_penalty)
+        response = response.choices[0].message.content
         return response
     
     
