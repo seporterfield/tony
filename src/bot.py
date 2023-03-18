@@ -4,9 +4,9 @@ import os
 import discord
 import openai
 from dotenv import load_dotenv
-import time
 import logging
 from npc import NPC, NPCResponse
+import asyncio
 
 # Keys and environment vars\
 load_dotenv()
@@ -22,6 +22,9 @@ discord_logger = logger.getChild('child')
 intents = discord.Intents.all()
 client = discord.Client(command_prefix='!', intents=intents)
 
+NPC_TYPING_TIME = 12 # seconds between messages
+lock = asyncio.Lock()
+
 tony = NPC(name='Tony DeSalvo',
            username='TonyPatriot447',
            age=52,
@@ -36,7 +39,7 @@ tony = NPC(name='Tony DeSalvo',
                     'watches Fox News daily', 'his son Dino told him about Discord'],
            client=client,
            history_length=5,
-           model="gpt-3.5-turbo",
+           model="gpt-3.5-turbo-0301",
            temperature=0.6,
            frequency_penalty=0.3,
            logger=logger)
@@ -45,39 +48,45 @@ tony = NPC(name='Tony DeSalvo',
 async def on_ready():
     # Once bot has logged in, send a status update
     discord_logger.info('{0.user} is now online.'.format(client))
+    # Get recent chat history
+    await tony.fill_messages()
 
 
 @client.event
 async def on_message(message: discord.Message):
-    # New message in server, update message queue
-    await tony.update_messages(message)
-    logger.info(f"{message.author.name}: {message.content}")
-    # What kind of response do we need to give?
-    response_type = tony.get_response_type()
-    logger.info(f"RESPONSE TYPE: {response_type}")
-    if response_type == NPCResponse.SILENCE:
-        return
+    async with lock:
+        # New message in server, update message queue
+        tony.update_messages(message)
+        discord_logger.info(f"{message.author.name}: {message.content}")
+        # What kind of response do we need to give?
+        response_type = await tony.get_response_type()
+        discord_logger.info(f"{response_type}")
+        if response_type == NPCResponse.SILENCE:
+            return
+        
+        # "Typing..."
+        async with message.channel.typing():
+            await asyncio.sleep(NPC_TYPING_TIME)
+        
+        # With what words will we reply?
+        response = "bababooey"
+        try:
+            response = await tony.prompt()
+        except Exception as e:
+            discord_logger.error(e.args)
+        discord_logger.info(f"RESPONSE-PRECLEAN: {response}")
     
-    # With what words will we reply?
-    response = "bababooey"
-    try:
-        response = tony.prompt()
-    except Exception as e:
-        discord_logger.error(e.args)
+        # Remove text related to prompts and generation
+        response = tony.clean_response(response)
+        if response == "":
+            return
+        discord_logger.info(f"RESPONSE: {response}")
     
-    # Remove text related to prompts and generation
-    response = tony.clean_response(response)
-    if response == "":
-        return
-    logger.info(f"RESPONSE: {response}")
-    
-    # Send the message
-    
-    try:
-        await message.channel.send(response)
-    except Exception as e:
-        discord_logger.error(e.args)
-    discord_logger.info(f'MESSAGE: {message.content}\nRESPONSE TYPE: {response_type}\nRESPONSE: {response}')
-
+        # Send the message
+        
+        try:
+            await message.channel.send(response)
+        except Exception as e:
+            discord_logger.error(e.args)
 # Start the bot!
 client.run(TOKEN)

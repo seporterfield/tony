@@ -5,8 +5,13 @@ import random
 from collections import deque
 from logging import Logger
 import json
+import asyncio
 
 RANDOM_RESPONSE_ODDS = 40
+
+class NPCPromptMode(Enum):
+    NPC = 1
+    RELEVANCE_CHECKER = 2
 
 class NPCResponse(Enum):
     SILENCE = 1
@@ -19,7 +24,7 @@ class NPC:
     def make_description(cls, name, username, age, gender, setting, job, personality, context):
         return f" Name: {name}, Username: {username}, Age: {age}, Gender: {gender}, " + \
             f"Setting: {setting}, Job: {job}, Personality traits: {'-'.join(personality)}, " + \
-            f"Additional context: {'-'.join(context)}. "
+            f"Additional context: {'---'.join(context)}. "
     
     def __init__(self,
                  client: discord.Client,
@@ -32,6 +37,7 @@ class NPC:
                  job: str = "unknown",
                  personality: list[str] = ["unknown"],
                  context: list[str] = ["unknown"],
+                 channel: discord.TextChannel = None,
                  model: str = "gpt-3.5-turbo",
                  temperature: float = 0.5,
                  frequency_penalty: float = 0,
@@ -46,6 +52,7 @@ class NPC:
         self.context = context
         
         self.client = client
+        self.channel = channel
         self.description = NPC.make_description(name=name, username=username, age=age,
                                                 gender=gender, setting=setting, job=job,
                                                 personality=personality, context=context)
@@ -57,26 +64,34 @@ class NPC:
         self.logger = logger
         
         self.messages = deque()
-        self.consecutive_message_limit = 3
+        self.consecutive_message_limit = 2
     
     def make_system_message(self) -> str:
-        return "You are an NPC in a videogame that takes place in a Discord server. " + \
-            self.description + \
+        return f"You are {self.username}, an NPC in a videogame that takes place in a Discord server. " + \
+            self.description + " --- Loves chatting on Discord. You are not a helpful assistant, just this person enjoying themselves on Discord." + \
             "You always respond in the format of a verbal conversation, " + \
-            "never narrating or putting your own words in quotes. You always start your message " + \
-            f"with {self.username}:, but you most definitely never pretend to be other users." 
+            "never narrating, never putting your own words in quotes, never anything out of character whatsoever. You always start your message " + \
+            f"with {self.username}:, and only respond with a single message, which will be attributed to {self.username}. " + \
+            f"Remember, you only respond with a SINGLE message. NEVER pretend to be others. If you respond to yourself, don't repeat yourself." 
     
+    def npc_sees_message(self, message: discord.Message) -> bool:
+        return message.content.strip() != ""
     
-    async def update_messages(self, message: discord.Message) -> None:
-        if len(self.messages) == 0:
-            self.messages = deque([msg async for msg in message.channel.history(limit=self.history_length)][::-1])
+    def update_messages(self, message: discord.Message) -> None:        
+        if self.npc_sees_message(message):
+            self.messages.appendleft(message)
+            if len(self.messages) >= self.history_length:
+                self.messages.pop()
+    
+    async def fill_messages(self) -> None:
+        if self.channel == None:
             return
-        self.messages.popleft()
-        self.messages.append(message)
-        
+        async for msg in self.channel.history(limit=self.history_length):
+            self.update_messages(msg)
+            
     def consecutive_msg_limit_reached(self) -> bool:
         num_consecutive = 0
-        for msg in list(self.messages)[::-1]:
+        for msg in list(self.messages):
             if msg.author.id != self.client.user.id:
                 break
             num_consecutive += 1
@@ -92,40 +107,50 @@ class NPC:
                 return True
         return False
     
-    def make_completion_messages(self, system_prompt: str, role: str = 'npc') -> list[dict]:
+    def make_completion_messages(self, system_prompt: str, mode: NPCPromptMode = NPCPromptMode.RELEVANCE_CHECKER) -> list[dict]:
         completion_messages = [{"role": "system", "content": system_prompt}]
-        for message in self.messages:
-            role, signature = "", ""
-            if message.author.id == self.client.user.id and role == 'npc':
-                role = "assistant"
-                signature = ""
-            else:
-                role = "user"
-                signature = message.author.name + ": "
-            completion_messages.append({"role": role, "content": signature + message.content})
+        if mode == NPCPromptMode.RELEVANCE_CHECKER:
+            chat_history = ""
+            for message in reversed(self.messages):
+                content = message.content.replace(str(self.client.user.id), self.username)
+                chat_history += message.author.name + ": " + content + "\n"
+            completion_messages.append({"role": "user", "content": chat_history})
+        elif mode == NPCPromptMode.NPC:
+            for message in reversed(self.messages):
+                role = "assistant" if self.client.user.id == message.author.id else "user"
+                completion_messages.append({"role": role, "content": message.author.name + ": " + message.content})
+        else:
+            raise Exception("chat completion mode set incorrectly. use either 'npc' or 'relevance_checker'.")
         return completion_messages
     
     def prompt_openai(self, completion_messages: list[dict]) -> str:
         assert(len(json.dumps(completion_messages)) <= 15000)
         assert(len(completion_messages) != 0)
-        print(completion_messages)
-        response = openai.ChatCompletion.create(model=self.model, messages=completion_messages,
-                                            max_tokens=200, temperature=self.temperature,
-                                            frequency_penalty=self.frequency_penalty)
-        response = response.choices[0].message.content
-        print(response)
+        response = "bababooey"
+        try:
+            response = openai.ChatCompletion.create(model=self.model, messages=completion_messages,
+                                                max_tokens=200, temperature=self.temperature,
+                                                frequency_penalty=self.frequency_penalty)
+            response = response.choices[0].message.content
+        except Exception as e:
+            print(e.args)
         return response
     
-    def is_response_appropriate(self) -> bool:
+    async def is_response_appropriate(self) -> bool:
         # We're gonna run this through another OpenAI Prompt.
-        system_prompt = f"Classify whether anything in this discord channel is related to anything in the following description <{self.description}>. Please answer concisely with either " + \
-                        "'AFFIRMATIVE' or 'NEGATIVE'. Do respond with anything else."
-        completion_messages = self.make_completion_messages(system_prompt, role='classifier')
+        system_prompt = "You are provided with a chat history, and you must judge how likely it is that " + \
+                        "the a future response in this discord channel will " + \
+                        f"come from the user described as follows: <{self.description}>. Please answer " + \
+                        "concisely with either a number from 1 to 9. Do respond with anything else."
+        completion_messages = self.make_completion_messages(system_prompt, mode=NPCPromptMode.RELEVANCE_CHECKER)
         
-        response = self.prompt_openai(completion_messages=completion_messages)
-        return "AFFIRMATIVE" in response
+        response = await asyncio.to_thread(self.prompt_openai, completion_messages)
+        for i in range(4,10):
+            if str(i) in response:
+                return True
+        return False
     
-    def get_response_type(self) -> NPCResponse:
+    async def get_response_type(self) -> NPCResponse:
         if not self.is_chat_relevant():
             if random.randint(1, RANDOM_RESPONSE_ODDS) == 1:
                 return NPCResponse.RANDOM
@@ -133,21 +158,20 @@ class NPC:
                 return NPCResponse.SILENCE
         if self.consecutive_msg_limit_reached():
             return NPCResponse.SILENCE
-        if self.is_response_appropriate():
+        if await self.is_response_appropriate():
             return NPCResponse.DIRECT
         return NPCResponse.SILENCE
     
-    def prompt(self) -> str:
-        completion_messages = self.make_completion_messages(self.system_message, role='npc')
-        response = self.prompt_openai(completion_messages=completion_messages)
+    async def prompt(self) -> str:
+        completion_messages = self.make_completion_messages(self.system_message, mode=NPCPromptMode.NPC)
+        response = await asyncio.to_thread(self.prompt_openai, completion_messages)
         return response
     
     def clean_response(self, response: str) -> str:
-        pieces = response.split(self.username + ":")
-        print(pieces)
-        if len(pieces) < 2:
-            return "bababooey"
-        return response.split(self.username + ":")[1][:2000] # TODO Test API call pipeline, add to this if necessary, otherwise remove.
+        pieces = response.split(":")
+        if len(pieces) > 1:
+            response = " ".join(pieces[1:])
+        return response[:2000]
     
 def main():
     pass
