@@ -2,3 +2,5 @@
 env
 **/__pycache__/
 Makefile
+src/personas
+src/bot.yaml
