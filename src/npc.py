@@ -14,8 +14,8 @@ from multiprocessing import Queue
 
 RANDOM_RESPONSE_ODDS = 40
 MAX_TOKENS = 200
-MAX_OPENAI_API_CALL_ATTEMPTS = 3
-OPENAI_TIMEOUT = 5
+MAX_OPENAI_API_CALL_ATTEMPTS = 5
+OPENAI_TIMEOUT = 12
 
 class NPCPromptMode(Enum):
     NPC = 1
@@ -184,36 +184,42 @@ class NPC:
         return completion_messages
     
     def api_call_openai(self, messages, queue: Queue):
-        response = (openai.ChatCompletion.create(model=self.model,
-                                                messages=messages,
-                                                max_tokens=MAX_TOKENS,
-                                                temperature=self.temperature,
-                                                frequency_penalty=self.frequency_penalty))
+        response = None
+        try:
+            response = (openai.ChatCompletion.create(model=self.model,
+                                                    messages=messages,
+                                                    max_tokens=MAX_TOKENS,
+                                                    temperature=self.temperature,
+                                                    frequency_penalty=self.frequency_penalty))
+        except Exception:
+            response = None
         queue.put(response)
     
-    def prompt_openai(self, completion_messages: list[dict]) -> str:
+    async def prompt_openai(self, completion_messages: list[dict]) -> str:
         print("MADE IT TO PROMPT!!")
-        assert(len(json.dumps(completion_messages)) <= 15000)
-        assert(len(completion_messages) != 0)
+        #assert(len(json.dumps(completion_messages)) <= 15000)
+        #assert(len(completion_messages) != 0)
+        response = ""
         response_queue = Queue()
         for i in range(MAX_OPENAI_API_CALL_ATTEMPTS + 1):
             if i == MAX_OPENAI_API_CALL_ATTEMPTS:
-                self.logger.error("MAX CALLS TO OPENAI API REACHED. SHUTTING OFF BOT CLIENT!")
-                self.client.close()
+                self.logger.warning("MAX CALLS TO OPENAI API REACHED. SHUTTING OFF BOT CLIENT!")
+                await self.client.close()
                 break
             
-            api_process: Process = Process(target=self.api_call_openai(messages=completion_messages, queue=response_queue))
+            api_process: Process = Process(target=self.api_call_openai, args=(completion_messages, response_queue))
             api_process.start()
             # Wait for the process to finish, or for the timeout to expire
-            api_process.join(OPENAI_TIMEOUT)
+            await asyncio.sleep(OPENAI_TIMEOUT)
             if api_process.is_alive():
-                self.logger.warn(f"OpenAI API Timed out {i+1} times...")
+                self.logger.warning(f"OpenAI API Timed out {i+1} times...")
                 api_process.terminate()
+                continue
+            response = response_queue.get()
+            if response == None:
                 continue
             else:
                 break
-        
-        response = response_queue.get()
         self.logger.debug(f"{self.name}|OpenAI response: {response}")
         if response:
             response = response.choices[0].message.content
@@ -234,7 +240,7 @@ class NPC:
     
     async def prompt(self) -> str:
         completion_messages = self.make_completion_messages(self.system_message, mode=NPCPromptMode.NPC)
-        response = await asyncio.to_thread(self.prompt_openai, completion_messages)
+        response = await self.prompt_openai(completion_messages)
         return response
     
     def clean_response(self, response: str) -> str:

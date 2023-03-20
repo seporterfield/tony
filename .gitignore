@@ -4,3 +4,6 @@ env
 Makefile
 src/personas
 src/bot.yaml
+get_bot_profile_desc.py
+src/bot_envs
+update_bots.sh
