@@ -116,7 +116,7 @@ class NPC:
         if self.npc_sees_message(message):
             self.logger.debug(f"{self.name}|saw it!: {message.content}")
             self.messages.append(message)
-            if len(self.messages) >= self.history_length:
+            if len(self.messages) > self.history_length:
                 popped = self.messages.popleft()
                 self.logger.debug(f"{self.name}|popped: {popped.content}")
     
