@@ -12,7 +12,7 @@ For each persona you will have to follow some steps in order to create an NPC.
 ### Step 1
 Create a new Discord application and turn it into a bot.
 Be sure to turn on all read and write permissions, and give your NPC a fitting description.
-We recommend using [this](https://this-person-does-not-exist.com) site to get profile pictures.
+We recommend using [this-person-does-not-exist](https://this-person-does-not-exist.com) or [nightcafe](https://creator.nightcafe.studio/studio) to get profile pictures.
 
 ### Step 2
 Add the bot's Discord auth token to a new file under src/bot_envs named `[YOUR NPC's NAME].env` containing

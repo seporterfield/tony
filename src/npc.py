@@ -256,7 +256,7 @@ class NPC:
         pieces = response.split(":")
         if len(pieces) > 1:
             response = " ".join(pieces[1:])
-        return response[:2000]
+        return response
     
 def main():
     pass

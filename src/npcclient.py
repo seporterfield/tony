@@ -2,7 +2,9 @@ import discord
 import logging
 from npc import NPC, NPCResponse
 import asyncio
+import math
 
+DISCORD_CHAR_LIMIT=2000
 #lock = asyncio.Lock()
 
 # Logging setup
@@ -49,6 +51,13 @@ class NPCClient(discord.Client):
     
         # Remove text related to prompts and generation
         response = self.bot.clean_response(response)
+        # Chunk response up into discord-message-size bits
+        text_chunks = []
+        num_chunks = math.ceil(len(response)/float(DISCORD_CHAR_LIMIT))
+        for chunk_idx in range(num_chunks):
+            new_chunk = response[chunk_idx*DISCORD_CHAR_LIMIT:(chunk_idx+1)*DISCORD_CHAR_LIMIT]
+            text_chunks.append(new_chunk)
+            
         if response == "":
             self.responding = False
             return
@@ -59,7 +68,8 @@ class NPCClient(discord.Client):
             # "Typing..."
             await asyncio.sleep(self.typing_time)
         try:
-            await message.channel.send(response)
+            for chunk in text_chunks:
+                await message.channel.send(chunk)
         except Exception as e:
             discord_logger.error(self.bot.name, e.args)
         
