@@ -1,5 +1,5 @@
-.env
-env
+.venv
+.git_credentials
 **/__pycache__/
 src/personas
 src/bot.yaml
