@@ -1,7 +1,7 @@
 import discord
 import logging
-from npc import DiscordNPC, NPCResponse
-from persona import Persona
+from npc import DiscordNPC
+from npc_llm import NPCLLM
 import asyncio
 import math
 
@@ -29,7 +29,7 @@ class NPCClient(discord.Client):
         self.reading_time = reading_time
         self.responding = False
         self.bot = DiscordNPC(
-            persona=Persona(bot_config),
+            llm=NPCLLM.from_config(bot_config),
             user=self.user,
         )
 
@@ -91,9 +91,9 @@ class NPCClient(discord.Client):
         await self.bot.update_messages(message)
         discord_logger.info(f"{self.bot.name}|{message.author.name}: {message.content}")
         # Get response type
-        response_type = await self.bot.get_response_type()
-        discord_logger.info(f"{self.bot.name}|{response_type}")
-        if response_type == NPCResponse.SILENCE:
+        respond: bool = await self.bot.respond_to_new_msg()
+        discord_logger.info(f"{self.bot.name}|{'responding...' if respond else 'ignoring.'}")
+        if respond:
             self.responding = False
             return
         # Message chat

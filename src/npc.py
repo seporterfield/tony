@@ -1,10 +1,14 @@
 from persona import Persona
+from npc_llm import NPCLLM
+import discord
+
 class DiscordNPC:
 
     name: str
 
-    def __init__(self, persona: Persona, user, logger):
-        pass
+    def __init__(self, user: discord.User, llm: NPCLLM):
+        self.user: discord.User = user
+        self.llm: NPCLLM = llm
 
     def prompt(self):
         # Prep inputs from persona
@@ -22,7 +26,6 @@ class DiscordNPC:
         # Add message to embeddings store
         pass
 
-    async def get_response_type(self):
-        # Decide whether or not to be silent
-        # Emotional threshold? Bool?
+    async def respond_to_new_msg(self) -> bool:
+        # Bool now
         pass
