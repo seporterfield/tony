@@ -1,0 +1,7 @@
+{
+    "docwriter.progress.trackFunctions": true,
+    "docwriter.progress.trackClasses": true,
+    "docwriter.progress.trackTypes": false,
+    "justMyCode": false,
+    "explorer.excludeGitIgnore": false
+}

@@ -7,3 +7,4 @@ get_bot_profile_desc.py
 src/bot_envs
 update_bots.sh
 registry_details.txt
+.env
