@@ -20,7 +20,9 @@ def main():
     bot_client = NPCClient(
         command_prefix="!",
         intents=intents,
-        bot_config="bot.yaml",
+        personafile="persona.yaml",
+        memory_url="...",
+        index_name="persona",
         typing_time=4,
         reading_time=7,
     )

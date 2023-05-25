@@ -2,6 +2,7 @@ import discord
 import logging
 from npc import DiscordNPC
 from npc_llm import NPCLLM
+from npc_memory import NPCMemory
 import asyncio
 import math
 
@@ -20,7 +21,9 @@ class NPCClient(discord.Client):
         self,
         command_prefix,
         intents,
-        bot_config: str,
+        personafile: str,
+        memory_url: str,
+        index_name: str,
         typing_time: int,
         reading_time: int,
     ):
@@ -29,8 +32,9 @@ class NPCClient(discord.Client):
         self.reading_time = reading_time
         self.responding = False
         self.bot = DiscordNPC(
-            llm=NPCLLM.from_config(bot_config),
             user=self.user,
+            llm=NPCLLM.from_config(personafile),
+            memory=NPCMemory.from_existing_index(memory_url, index_name),
         )
 
     async def send_chunks(self, message: discord.Message, text_chunks):
@@ -57,10 +61,9 @@ class NPCClient(discord.Client):
         # Get reply
         response = "..."
         try:
-            response = await self.bot.prompt()
+            response = await self.bot.get_npc_response()
         except Exception as e:
             discord_logger.error(e.args)
-        discord_logger.info(f"{self.bot.name}|RESPONSE-PRECLEAN: {response}")
         return response
 
     def message_chat(self, message):
@@ -79,20 +82,20 @@ class NPCClient(discord.Client):
 
     async def on_ready(self):
         # Once bot has logged in, send a status update
-        discord_logger.info("{0}|{1.user} is now online.".format(self.bot.name, self))
-        # Get recent chat history
-        await self.bot.fill_messages()
+        discord_logger.info(f"{self.bot.name}|{self.user.display_name} is now online.")
 
     async def on_message(self, message: discord.Message):
         if self.responding:
             return
         self.responding = True
         # New message in server, update message queue
-        await self.bot.update_messages(message)
+        await self.bot.update_message_history(message)
         discord_logger.info(f"{self.bot.name}|{message.author.name}: {message.content}")
         # Get response type
         respond: bool = await self.bot.respond_to_new_msg()
-        discord_logger.info(f"{self.bot.name}|{'responding...' if respond else 'ignoring.'}")
+        discord_logger.info(
+            f"{self.bot.name}|{'responding...' if respond else 'message ignored'}"
+        )
         if respond:
             self.responding = False
             return
