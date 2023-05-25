@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 import os
 import openai
 import discord
-from npcclient import NPCClient
+from tony.npcclient import NPCClient
 
 # import asyncio
 # from multiprocessing.context import Process
@@ -21,7 +21,7 @@ def main():
         command_prefix="!",
         intents=intents,
         personafile="persona.yaml",
-        memory_url="...",
+        memory_url="...", # TODO configure testing vector db and add url
         index_name="persona",
         typing_time=4,
         reading_time=7,

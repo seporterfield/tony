@@ -1,4 +1,3 @@
-from persona import Persona
 from npc_llm import NPCLLM
 from npc_memory import NPCMemory
 from server_msg import ServerMsg
@@ -6,8 +5,6 @@ from typing import List
 import discord
 
 MAX_CHAT_HISTORY = 10
-DEFAULT_VECTORSTORE_ADDRESS = ""
-INDEX_NAME = ""
 
 class DiscordNPC:
 

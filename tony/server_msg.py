@@ -3,7 +3,7 @@ import discord
 
 @dataclass
 class ServerMsg:
-    author: str
+    display_name: str
     content: str
     created: str
 
@@ -12,4 +12,4 @@ class ServerMsg:
         return ServerMsg(message.author.display_name, message.clean_content, message.created_at)
     
     def __str__(self):
-        return f"({self.created}) {self.author}: {self.content}"
+        return f"({self.created}) {self.display_name}: {self.content}"
