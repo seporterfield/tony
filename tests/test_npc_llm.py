@@ -1,4 +1,4 @@
-from tony.npc_llm import NPCLLM
+from src.npc_llm import NPCLLM
 import dotenv
 
 dotenv.load_dotenv()

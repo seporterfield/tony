@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 import os
 import openai
 import discord
-from tony.npcclient import NPCClient
+from src.npcclient import NPCClient
 
 # import asyncio
 # from multiprocessing.context import Process
