@@ -4,13 +4,10 @@ import openai
 import discord
 from src.npcclient import NPCClient
 
-# import asyncio
-# from multiprocessing.context import Process
-
 # Keys and environment vars
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-OPENAI_KEY = os.getenv("OPENAI_KEY")
+OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 openai.api_key = OPENAI_KEY
 
 
@@ -21,7 +18,7 @@ def main():
         command_prefix="!",
         intents=intents,
         personafile="persona.yaml",
-        memory_url="...", # TODO configure testing vector db and add url
+        memory_url="redis://localhost:6379",  # TODO configure testing vector db and add url
         index_name="persona",
         typing_time=4,
         reading_time=7,
