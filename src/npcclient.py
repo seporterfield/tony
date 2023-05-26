@@ -1,8 +1,8 @@
 import discord
 import logging
-from npc import DiscordNPC
-from npc_llm import NPCLLM
-from npc_memory import NPCMemory
+from src.discord_npc import DiscordNPC
+from src.npc_llm import NPCLLM
+from src.npc_memory import NPCMemory
 import asyncio
 import math
 

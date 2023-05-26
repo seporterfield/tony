@@ -1,6 +1,6 @@
-from npc_llm import NPCLLM
-from npc_memory import NPCMemory
-from server_msg import ServerMsg
+from src.npc_llm import NPCLLM
+from src.npc_memory import NPCMemory
+from src.server_msg import ServerMsg
 from typing import List
 import discord
 

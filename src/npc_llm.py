@@ -1,4 +1,4 @@
-from persona import Persona
+from src.persona import Persona
 from langchain.chat_models import ChatOpenAI
 from langchain import LLMChain
 from langchain.prompts.chat import (
