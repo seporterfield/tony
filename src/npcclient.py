@@ -32,18 +32,18 @@ class NPCClient(discord.Client):
         self.reading_time = reading_time
         self.responding = False
         self.bot = DiscordNPC(
-            user=self.user,
+            user=None,
             llm=NPCLLM.from_config(personafile),
             memory=None # NPCMemory.from_existing_index(memory_url, index_name),
         )
 
-    async def send_chunks(self, message: discord.Message, text_chunks):
-        async with message.channel.typing():
+    async def send_chunks(self, channel: discord.TextChannel, text_chunks):
+        async with channel.typing():
             # "Typing..."
             await asyncio.sleep(self.typing_time)
         try:
             for chunk in text_chunks:
-                await message.channel.send(chunk)
+                await channel.send(chunk)
         except Exception as e:
             discord_logger.error(self.user.name, e.args, e.with_traceback())
 
@@ -66,7 +66,7 @@ class NPCClient(discord.Client):
             discord_logger.error(e.args, e.with_traceback())
         return response
 
-    async def message_chat(self, message):
+    async def message_chat(self, channel: discord.TextChannel):
         # Generate reply
         response = await self.generate_reply()
         # Chunk response up into discord-message-size bits
@@ -78,11 +78,13 @@ class NPCClient(discord.Client):
         discord_logger.info(f"{self.user.name}|RESPONSE: {response}")
 
         # Send the message
-        await self.send_chunks(message, text_chunks)
+        await self.send_chunks(channel, text_chunks)
 
     async def on_ready(self):
         # Once bot has logged in, send a status update
         discord_logger.info(f"{self.user.name}|{self.user.display_name} is now online.")
+        # Pass user to bot now that we are logged in (otherwise methods return None)
+        self.bot.user = self.user 
 
     async def on_message(self, message: discord.Message):
         if self.responding:
@@ -92,7 +94,7 @@ class NPCClient(discord.Client):
         await self.bot.update_message_history(message)
         discord_logger.info(f"{self.user.name}|{message.author.name}: {message.content}")
         # Get response type
-        respond: bool = await self.bot.should_respond_to_new_msg()
+        respond: bool = await self.bot.should_respond_to_new_msg(message)
         discord_logger.info(
             f"{self.user.name}|{'responding...' if respond else 'message ignored'}"
         )
@@ -100,7 +102,7 @@ class NPCClient(discord.Client):
             self.responding = False
             return
         # Message chat
-        await self.message_chat(message)
+        await self.message_chat(message.channel)
 
         # Waiting for others to send messages before updating queue
         await asyncio.sleep(self.reading_time)
