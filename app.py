@@ -20,7 +20,7 @@ def main():
         command_prefix="!",
         intents=intents,
         personafile="persona.yaml",
-        memory_url="redis://localhost:6379",  # TODO configure testing vector db and add url
+        url="redis://localhost:6379",  # TODO configure testing vector db and add url
         index_name="persona",
         typing_time=4,
         reading_time=7,

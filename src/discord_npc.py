@@ -10,8 +10,6 @@ MAX_CHAT_HISTORY = 10
 
 
 class DiscordNPC:
-    name: str
-
     def __init__(
         self,
         llm: NPCLLM,
@@ -43,7 +41,7 @@ class DiscordNPC:
         a_memory = (
             self.memory.remember(message_history_str)
             if self.memory is not None
-            else "can't remember anything."
+            else "... nothing came to mind"
         )
         # Make prompt
         return self.llm.prompt(message_history_str, a_memory)

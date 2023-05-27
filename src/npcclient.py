@@ -7,6 +7,7 @@ import discord
 
 from src.discord_npc import DiscordNPC
 from src.npc_llm import NPCLLM
+from src.npc_memory import NPCMemory
 
 DISCORD_CHAR_LIMIT = 2000
 # lock = asyncio.Lock()
@@ -14,7 +15,6 @@ DISCORD_CHAR_LIMIT = 2000
 # Logging setup
 logger = logging.getLogger("discord")
 discord_logger = logger.getChild("child")
-# discord_logger.setLevel(logging.DEBUG)
 
 
 # Discord client for NPC chatbots
@@ -24,7 +24,7 @@ class NPCClient(discord.Client):
         command_prefix,
         intents,
         personafile: str,
-        memory_url: str,
+        url: str,
         index_name: str,
         typing_time: int,
         reading_time: int,
@@ -35,7 +35,7 @@ class NPCClient(discord.Client):
         self.responding = False
         self.bot = DiscordNPC(
             llm=NPCLLM.from_config(personafile),
-            memory=None,  # NPCMemory.from_existing_index(OpenAIEmbeddings(), memory_url, index_name),
+            memory=NPCMemory(url, index_name),
         )
 
     async def send_chunks(self, channel: discord.abc.Messageable, text_chunks):
