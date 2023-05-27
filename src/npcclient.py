@@ -34,7 +34,7 @@ class NPCClient(discord.Client):
         self.bot = DiscordNPC(
             user=self.user,
             llm=NPCLLM.from_config(personafile),
-            memory=NPCMemory.from_existing_index(memory_url, index_name),
+            memory=None # NPCMemory.from_existing_index(memory_url, index_name),
         )
 
     async def send_chunks(self, message: discord.Message, text_chunks):
@@ -45,7 +45,7 @@ class NPCClient(discord.Client):
             for chunk in text_chunks:
                 await message.channel.send(chunk)
         except Exception as e:
-            discord_logger.error(self.bot.name, e.args)
+            discord_logger.error(self.user.name, e.args, e.with_traceback())
 
     def chunk_response(self, response):
         text_chunks = []
@@ -61,28 +61,28 @@ class NPCClient(discord.Client):
         # Get reply
         response = "..."
         try:
-            response = await self.bot.get_npc_response()
+            response = self.bot.get_npc_response()
         except Exception as e:
-            discord_logger.error(e.args)
+            discord_logger.error(e.args, e.with_traceback())
         return response
 
-    def message_chat(self, message):
+    async def message_chat(self, message):
         # Generate reply
-        response = self.generate_reply(message)
+        response = await self.generate_reply()
         # Chunk response up into discord-message-size bits
         text_chunks = self.chunk_response(response)
 
         if response == "":
             self.responding = False
             return
-        discord_logger.info(f"{self.bot.name}|RESPONSE: {response}")
+        discord_logger.info(f"{self.user.name}|RESPONSE: {response}")
 
         # Send the message
-        self.send_chunks(message, text_chunks)
+        await self.send_chunks(message, text_chunks)
 
     async def on_ready(self):
         # Once bot has logged in, send a status update
-        discord_logger.info(f"{self.bot.name}|{self.user.display_name} is now online.")
+        discord_logger.info(f"{self.user.name}|{self.user.display_name} is now online.")
 
     async def on_message(self, message: discord.Message):
         if self.responding:
@@ -90,17 +90,17 @@ class NPCClient(discord.Client):
         self.responding = True
         # New message in server, update message queue
         await self.bot.update_message_history(message)
-        discord_logger.info(f"{self.bot.name}|{message.author.name}: {message.content}")
+        discord_logger.info(f"{self.user.name}|{message.author.name}: {message.content}")
         # Get response type
-        respond: bool = await self.bot.respond_to_new_msg()
+        respond: bool = await self.bot.should_respond_to_new_msg()
         discord_logger.info(
-            f"{self.bot.name}|{'responding...' if respond else 'message ignored'}"
+            f"{self.user.name}|{'responding...' if respond else 'message ignored'}"
         )
-        if respond:
+        if not respond:
             self.responding = False
             return
         # Message chat
-        self.message_chat(message)
+        await self.message_chat(message)
 
         # Waiting for others to send messages before updating queue
         await asyncio.sleep(self.reading_time)

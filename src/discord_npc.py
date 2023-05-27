@@ -14,7 +14,7 @@ class DiscordNPC:
         self.user: discord.User = user
         self.llm: NPCLLM = llm
         self.memory: NPCMemory = memory
-        self.chat_history = []
+        self.chat_history: List[ServerMsg] = []
 
     async def fill_messages(self, channel: discord.TextChannel) -> None:
         # sourcery skip: raise-specific-error
@@ -24,23 +24,23 @@ class DiscordNPC:
         msglist = [ServerMsg.from_message(message) async for message in channel.history(limit=MAX_CHAT_HISTORY)]
         self.chat_history = msglist
 
-    def get_npc_response(self, message_history: List[ServerMsg]) -> str:
+    def get_npc_response(self) -> str:
         # Combine recent chat history into string
         message_history_str = "\n".join(
-            [str(message) for message in reversed(message_history)]
+            [str(message) for message in reversed(self.chat_history)]
         )
         # Get a relevant memory from long term memory
-        a_memory = self.memory.remember(message_history_str)
+        a_memory = "can't remember anything." # self.memory.remember(message_history_str)
         # Make prompt
         return self.llm.prompt(message_history_str, a_memory)
 
-    def update_message_history(self, message: discord.Message):
+    async def update_message_history(self, message: discord.Message) -> None:
         if len(self.chat_history) == 0:
-            self.fill_messages(channel=message.channel)
+            await self.fill_messages(channel=message.channel)
         else:
             self.chat_history.insert(0, ServerMsg.from_message(message))
-            self.memory.add_texts([self.chat_history.pop()])
+            #self.memory.add_texts([self.chat_history.pop()])
 
-    async def respond_to_new_msg(self) -> bool:
+    async def should_respond_to_new_msg(self) -> bool:
         # TODO implement this
         return True

@@ -41,8 +41,11 @@ class NPCLLM:
         self.persona = persona
         self.chain = NPCLLM.make_chain(self.persona)
         
+    def clean(self, llm_response_str: str) -> str:
+        return llm_response_str.split(f"{self.persona.username}:")[1].strip()
 
     def prompt(self, chat_history: str, a_memory: str):
         # We need a chain for completing a new chat
         # Give it a template with instructions, pass in persona desc., pass in message history, pass in memory
-        return self.chain.run(a_memory=a_memory, chat_history=chat_history)
+        response = self.chain.run(a_memory=a_memory, chat_history=chat_history)
+        return self.clean(response)
