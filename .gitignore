@@ -11,3 +11,5 @@ registry_details.txt
 persona.yaml
 .pytest_cache
 test
+.ruff_cache
+.mypy_cache

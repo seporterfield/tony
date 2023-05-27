@@ -1,3 +1,5 @@
+from typing import Dict, List, Optional
+
 import yaml
 from yaml.loader import SafeLoader
 
@@ -5,12 +7,12 @@ from yaml.loader import SafeLoader
 class Persona:
     def __init__(self, config_path) -> None:
         # sourcery skip: raise-specific-error
-        self.unique_traits = {}
-        self.personality = []
-        self.context = []
-        data = None
+        self.unique_traits: Dict[str, str] = {}
+        self.personality: List[str] = []
+        self.context: List[str] = []
+        data: Optional[dict] = None
         with open(config_path) as f:
-            data: dict = yaml.load(f, Loader=SafeLoader)
+            data = yaml.load(f, Loader=SafeLoader)
         if data is None:
             raise Exception(
                 "Bad NPC config yaml file: %s", config_path
@@ -34,8 +36,8 @@ class Persona:
             raise Exception(
                 "Bad NPC config yaml file: %s", config_path
             )  # TODO custom exception
-        self.username = self.unique_traits["username"]
-        self.name = self.unique_traits["name"]
+        self.username: str = self.unique_traits["username"]
+        self.name: str = self.unique_traits["name"]
 
     def make_description(self):
         traits_str = "".join(

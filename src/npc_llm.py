@@ -1,21 +1,22 @@
-from src.persona import Persona
-from langchain.chat_models import ChatOpenAI
 from langchain import LLMChain
+from langchain.chat_models import ChatOpenAI
 from langchain.prompts.chat import (
     ChatPromptTemplate,
-    SystemMessagePromptTemplate,
     HumanMessagePromptTemplate,
+    SystemMessagePromptTemplate,
 )
+
+from src.persona import Persona
 
 
 class NPCLLM:
     @classmethod
     def from_config(cls, config_path: str):
         return NPCLLM(Persona(config_path=config_path))
-    
+
     @classmethod
     def make_chain(cls, persona: Persona) -> LLMChain:
-        chat = ChatOpenAI()
+        chat = ChatOpenAI()  # type: ignore[call-arg]
         system_template = (
             "You are a Discord playwright's assistant, you write plays that take place in a discord server"
             + " message by message. Below is a description of the character you will write a message for. "
@@ -40,7 +41,7 @@ class NPCLLM:
     def __init__(self, persona: Persona) -> None:
         self.persona = persona
         self.chain = NPCLLM.make_chain(self.persona)
-        
+
     def clean(self, llm_response_str: str) -> str:
         return llm_response_str.split(f"{self.persona.username}:")[1].strip()
 

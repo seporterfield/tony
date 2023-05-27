@@ -1,7 +1,9 @@
-from dotenv import load_dotenv
 import os
-import openai
+
 import discord
+import openai
+from dotenv import load_dotenv
+
 from src.npcclient import NPCClient
 
 # Keys and environment vars
