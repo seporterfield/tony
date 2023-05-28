@@ -4,6 +4,8 @@ from langchain.docstore.document import Document
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores.redis import Redis
 
+NUM_MEMORIES = 3
+
 
 class NPCMemory:
     def __init__(self, url: str, index_name: str):
@@ -17,10 +19,10 @@ class NPCMemory:
         )
 
     def remember(self, chat_history: str) -> str:
-        simsearch_result = self.redis.similarity_search(chat_history)
+        simsearch_results = self.redis.similarity_search(chat_history)
         return (
-            simsearch_result[0].page_content
-            if simsearch_result is not None and simsearch_result != []
+            "...".join([result.page_content for result in simsearch_results])
+            if simsearch_results is not None and len(simsearch_results) != NUM_MEMORIES
             else "... nothing came to mind"
         )
 

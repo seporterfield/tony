@@ -43,7 +43,9 @@ class NPCLLM:
         self.chain = NPCLLM.make_chain(self.persona)
 
     def clean(self, llm_response_str: str) -> str:
-        return llm_response_str.split(f"{self.persona.username}:")[1].strip()
+        cleaned_str = llm_response_str.split(f"{self.persona.username}:")[1].strip()
+        cleaned_str = cleaned_str.replace("@everyone", "everyone")
+        return cleaned_str
 
     def prompt(self, chat_history: str, a_memory: str):
         # We need a chain for completing a new chat
