@@ -31,6 +31,8 @@ class DiscordNPC:
             async for message in channel.history(limit=MAX_CHAT_HISTORY)
         ]
         self.chat_history = msglist
+        if self.memory is not None:
+            self.memory.add_texts([str(msg) for msg in msglist])
 
     def get_npc_response(self) -> str:
         # Combine recent chat history into string
@@ -47,12 +49,13 @@ class DiscordNPC:
         return self.llm.prompt(message_history_str, a_memory)
 
     async def update_message_history(self, message: discord.Message) -> None:
-        if len(self.chat_history) == 0:
+        await self.fill_messages(channel=message.channel)
+        """if len(self.chat_history) == 0:
             await self.fill_messages(channel=message.channel)
         else:
             self.chat_history.insert(0, ServerMsg.from_message(message))
             if self.memory is not None:
-                self.memory.add_texts([str(self.chat_history.pop())])
+                self.memory.add_texts([str(self.chat_history.pop())])"""
 
     async def should_respond_to_new_msg(self, message: discord.Message) -> bool:
         if self.user is None:

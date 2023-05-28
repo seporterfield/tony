@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from datetime import datetime
 
 import discord
 
@@ -8,12 +7,14 @@ import discord
 class ServerMsg:
     display_name: str
     content: str
-    created: datetime
+    created: str
 
     @classmethod
     def from_message(cls, message: discord.Message):
         return ServerMsg(
-            message.author.display_name, message.clean_content, message.created_at
+            message.author.display_name,
+            message.clean_content,
+            message.created_at.strftime("%Y-%m-%d %H:%M:%S"),
         )
 
     def __str__(self):
