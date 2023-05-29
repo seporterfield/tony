@@ -50,8 +50,8 @@ class NPCLLM:
             + " <memory>{a_memory}</memory>. "
         )
         human_template = (
-            f"Please write the next message in this Discord play, from {persona.username}. "
-            + "<playstart>{chat_history}</playstart><newmsg>"
+            "<playstart>{chat_history}</playstart>. "
+            + f"Please write the next message in this Discord play, from {persona.username}. <newmsg>"
         )
 
         system_message_prompt = SystemMessagePromptTemplate.from_template(

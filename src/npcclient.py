@@ -58,7 +58,7 @@ class NPCClient(discord.Client):
             text_chunks.append(new_chunk)
         return text_chunks
 
-    async def generate_reply(self):
+    def generate_reply(self):
         # Get reply
         response = "..."
         try:
@@ -71,7 +71,7 @@ class NPCClient(discord.Client):
         if channel is None:
             raise ValueError("No channel specified.")
         # Generate reply
-        response = await self.generate_reply()
+        response = self.generate_reply()
         # Chunk response up into discord-message-size bits
         text_chunks = self.chunk_response(response)
 
@@ -93,20 +93,22 @@ class NPCClient(discord.Client):
             return
         await self.message_chat(message.channel)
 
+    # Event based functions
+
     async def on_ready(self):
         # Once bot has logged in, send a status update
         discord_logger.info(f"{self.user.name}|{self.user.display_name} is now online.")
         # Pass user to bot now that we are logged in (otherwise methods return None)
         self.bot.user = self.user
 
-    async def on_resume(self):
+    async def on_resumed(self):
         chats = self.bot.chat_history
         if len(chats) == 0:
             return
         message = chats[0].original_message
         # Responding to message we may have missed while offline
-        message.channel.send("**User back online after connection issues**")
-        self.try_respond_to_message(message)
+        await message.channel.send("**User back online after connection issues**")
+        await self.try_respond_to_message(message)
 
     async def on_message(self, message: discord.Message):
         if not self.is_ready():
