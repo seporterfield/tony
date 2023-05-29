@@ -81,11 +81,32 @@ class NPCClient(discord.Client):
         # Send the message
         await self.send_chunks(channel, text_chunks)
 
+    async def try_respond_to_message(self, message: discord.Message):
+        if self.user is None:
+            return
+        respond: bool = await self.bot.should_respond_to_new_msg(message)
+        discord_logger.info(
+            f"{self.user.name}|{'responding...' if respond else 'message ignored'}"
+        )
+        if not respond:
+            self.responding = False
+            return
+        await self.message_chat(message.channel)
+
     async def on_ready(self):
         # Once bot has logged in, send a status update
         discord_logger.info(f"{self.user.name}|{self.user.display_name} is now online.")
         # Pass user to bot now that we are logged in (otherwise methods return None)
         self.bot.user = self.user
+
+    async def on_resume(self):
+        chats = self.bot.chat_history
+        if len(chats) == 0:
+            return
+        message = chats[0].original_message
+        # Responding to message we may have missed while offline
+        message.channel.send("**User back online after connection issues**")
+        self.try_respond_to_message(message)
 
     async def on_message(self, message: discord.Message):
         if not self.is_ready():
@@ -95,22 +116,11 @@ class NPCClient(discord.Client):
         if self.responding:
             return
         self.responding = True
-        # New message in server, update message queue
         await self.bot.update_message_history(message)
         discord_logger.info(
             f"{self.user.name}|{message.author.name}: {message.content}"
         )
-        # Get response type
-        respond: bool = await self.bot.should_respond_to_new_msg(message)
-        discord_logger.info(
-            f"{self.user.name}|{'responding...' if respond else 'message ignored'}"
-        )
-        if not respond:
-            self.responding = False
-            return
-        # Message chat
-        await self.message_chat(message.channel)
-
+        await self.try_respond_to_message(message)
         # Waiting for others to send messages before updating queue
         await asyncio.sleep(self.reading_time)
         self.responding = False

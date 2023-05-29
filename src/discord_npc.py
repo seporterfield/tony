@@ -27,7 +27,7 @@ class DiscordNPC:
             raise Exception("No channel provided")  # TODO add specific exception
         # channel.history() returns newest to oldest
         msglist = [
-            ServerMsg.from_message(message)
+            ServerMsg.from_discord_message(message)
             async for message in channel.history(limit=MAX_CHAT_HISTORY)
         ]
         self.chat_history = msglist
@@ -53,7 +53,7 @@ class DiscordNPC:
         """if len(self.chat_history) == 0:
             await self.fill_messages(channel=message.channel)
         else:
-            self.chat_history.insert(0, ServerMsg.from_message(message))
+            self.chat_history.insert(0, ServerMsg.from_discord_message(message))
             if self.memory is not None:
                 self.memory.add_texts([str(self.chat_history.pop())])"""
 
