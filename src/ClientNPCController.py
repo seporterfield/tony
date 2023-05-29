@@ -1,15 +1,15 @@
 import asyncio
 from typing import Any
 
-from src.ClientHandler import ClientHandler
+from src.BaseClientHandler import BaseClientHandler
 from src.NPC import NPC
 
 
 class ClientNPCController:
     def __init__(
-        self, client_handler: ClientHandler, npc: NPC, reading_time: float = 1.0
+        self, client_handler: BaseClientHandler, npc: NPC, reading_time: float = 1.0
     ) -> None:
-        self.client_handler: ClientHandler = client_handler
+        self.client_handler: BaseClientHandler = client_handler
         self.npc = npc
         self.reading_time = reading_time
         self.client_handler.set_controller(self)

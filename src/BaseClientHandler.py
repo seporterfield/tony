@@ -5,7 +5,7 @@ from src.BaseClient import BaseClient
 from src.ServerMsg import ServerMsg
 
 
-class ClientHandler(ABC):
+class BaseClientHandler(ABC):
     def __init__(
         self,
         client: BaseClient,

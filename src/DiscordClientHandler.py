@@ -4,7 +4,7 @@ from typing import Any, List
 
 import discord
 
-from src.ClientHandler import ClientHandler
+from src.BaseClientHandler import BaseClientHandler
 from src.DiscordClient import DiscordClient
 from src.ServerMsg import ServerMsg
 
@@ -14,7 +14,7 @@ MAX_CHAT_HISTORY = 10
 
 
 # Discord client for NPC chatbots
-class DiscordClientHandler(ClientHandler):
+class DiscordClientHandler(BaseClientHandler):
     def __init__(
         self,
         client: DiscordClient,
