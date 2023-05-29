@@ -5,7 +5,10 @@ import discord
 import openai
 from dotenv import load_dotenv
 
-from src.npcclient import NPCClient
+from src.ClientNPCController import ClientNPCController
+from src.DiscordClient import DiscordClient
+from src.DiscordClientHandler import DiscordClientHandler
+from src.NPC import NPC
 
 # Keys and environment vars
 load_dotenv()
@@ -25,18 +28,29 @@ def parse_arguments():
 def main():
     args = parse_arguments()
 
-    # Discord setup
+    # Discord client setup
     intents = discord.Intents.all()
-    bot_client = NPCClient(
-        command_prefix="!",
-        intents=intents,
-        personafile=args.persona,
-        url="redis://localhost:6379",  # TODO configure testing vector db and add url
-        index_name="persona",
+    client_handler = DiscordClientHandler(
+        DiscordClient(
+            command_prefix="!",
+            intents=intents,
+        ),
         typing_time=4,
-        reading_time=7,
     )
-    bot_client.run(token=BOT_TOKEN)
+
+    # NPC includes persona, LLM/prompts, and memory
+    npc = NPC(
+        personafile=args.persona,
+        memory_url="redis://localhost:6379",  # TODO configure testing vector db and add url
+        index_name="persona",
+    )
+
+    # Controller handles main logic
+    controller = ClientNPCController(client_handler, npc, reading_time=7.0)
+    client_handler.set_controller(controller)
+
+    # Start client
+    client_handler.connect(token=BOT_TOKEN)
 
 
 if __name__ == "__main__":

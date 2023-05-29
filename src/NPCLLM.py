@@ -6,7 +6,7 @@ from langchain.prompts.chat import (
     SystemMessagePromptTemplate,
 )
 
-from src.persona import Persona
+from src.Persona import Persona
 
 
 class NPCLLM:

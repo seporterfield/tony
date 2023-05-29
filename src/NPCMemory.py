@@ -8,14 +8,16 @@ NUM_MEMORIES = 3
 
 
 class NPCMemory:
-    def __init__(self, url: str, index_name: str):
+    def __init__(
+        self, memory_url: str = "redis://localhost:6379", index_name: str = "link"
+    ):
         # TODO start memory with some news articles
 
         self.redis = Redis.from_documents(
-            [Document(page_content="among us!")],
+            [Document(page_content="Welcome! This is your memory palace.")],
             OpenAIEmbeddings(),  # type: ignore[call-arg]
-            redis_url="redis://localhost:6379",
-            index_name="link",
+            redis_url=memory_url,
+            index_name=index_name,
         )
 
     def remember(self, chat_history: str) -> str:
