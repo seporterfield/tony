@@ -30,13 +30,8 @@ def main():
 
     # Discord client setup
     intents = discord.Intents.all()
-    client_handler = DiscordClientHandler(
-        DiscordClient(
-            command_prefix="!",
-            intents=intents,
-        ),
-        typing_time=4,
-    )
+    client = DiscordClient(command_prefix="!", intents=intents)
+    client_handler = DiscordClientHandler(client=client, typing_time=4)
 
     # NPC includes persona, LLM/prompts, and memory
     npc = NPC(
