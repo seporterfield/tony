@@ -10,6 +10,9 @@ Create a [persona file](#creating-a-persona).
 Replace the defaults in [.env_template](./.env_template) with your secret keys and rename it `.env`.
 
 
+Start the Redis server with `docker run -d --name redis-stack-server -p 6379:6379 redis/redis-stack-server:latest`.
+
+
 Run the bot with `python app.py --persona path-to-your-persona.yaml`.
 
 
