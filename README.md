@@ -2,7 +2,7 @@
 
 Tony is a python library for running large language model (LLM) based NPCs in multi-user chat environments.
 
-# Quick Start (Discord)
+## Quick Start (Discord)
 
 Create a [persona file](#creating-a-persona).
 
