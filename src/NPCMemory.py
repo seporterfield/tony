@@ -12,13 +12,17 @@ class NPCMemory:
         self, memory_url: str = "redis://localhost:6379", index_name: str = "link"
     ):
         # TODO start memory with some news articles
-
-        self.redis = Redis.from_documents(
-            [Document(page_content="Welcome! This is your memory palace.")],
-            OpenAIEmbeddings(),  # type: ignore[call-arg]
-            redis_url=memory_url,
-            index_name=index_name,
-        )
+        try:
+            self.redis = Redis.from_existing_index(
+                OpenAIEmbeddings(), redis_url=memory_url, index_name=index_name  # type: ignore[call-arg]
+            )
+        except ValueError:
+            self.redis = Redis.from_documents(
+                [Document(page_content="Welcome! This is your memory palace.")],
+                OpenAIEmbeddings(),  # type: ignore[call-arg]
+                redis_url=memory_url,
+                index_name=index_name,
+            )
 
     def remember(self, chat_history: str) -> str:
         simsearch_results = self.redis.similarity_search(chat_history)
