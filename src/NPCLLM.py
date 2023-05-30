@@ -18,9 +18,8 @@ class NPCLLM:
     def make_revision_chain(cls, persona: Persona) -> LLMChain:
         chat = ChatOpenAI()  # type: ignore[call-arg]
         system_template = (
-            "You are a Discord playwright's assistant, you revise plays that take place in a discord server."
-            + " Below is a description of the character you will revise a message for. "
-            + f"<desc>{persona.make_description()}</desc>. "
+            "You are a Discord playwright's assistant, "
+            + "you revise plays that take place in a discord server."
         )
         human_template = (
             f"Please revise the new message in this Discord play, which is from {persona.username}. "

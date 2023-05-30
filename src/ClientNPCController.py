@@ -19,7 +19,9 @@ class ClientNPCController:
         # Get reply
         response = "..."
         try:
+            print("Getting response from NPC...")
             response = self.npc.get_npc_response()
+            print("Got response!")
         except Exception as e:
             print("Failed to get NPC response\n", e.with_traceback(e.__traceback__))
         return response
@@ -38,9 +40,9 @@ class ClientNPCController:
         self.client_handler.on_ready()
 
     async def on_resumed(self):
-        message = self.client_handler.on_resumed(self.npc.chat_history)
+        message = await self.client_handler.on_resumed(self.npc.chat_history)
         if message is not None:
-            self.try_reply_to_message(message=message)
+            await self.try_reply_to_message(message=message)
 
     async def on_message(self, message):
         if self.replying:
