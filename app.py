@@ -36,7 +36,7 @@ def main():
     # NPC includes persona, LLM/prompts, and memory
     npc = NPC(
         personafile=args.persona,
-        memory_url="redis://localhost:6379",  # TODO configure testing vector db and add url
+        memory_url="redis://localhost:6379",
         index_name="persona",
     )
 

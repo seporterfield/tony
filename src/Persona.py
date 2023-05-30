@@ -4,6 +4,11 @@ import yaml
 from yaml.loader import SafeLoader
 
 
+class BadNPCConfigError(Exception):
+    def __init__(self, config_path):
+        super().__init__(f"Bad NPC config yaml file: {config_path}")
+
+
 class Persona:
     def __init__(self, config_path) -> None:
         # sourcery skip: raise-specific-error
@@ -14,9 +19,7 @@ class Persona:
         with open(config_path) as f:
             data = yaml.load(f, Loader=SafeLoader)
         if data is None:
-            raise Exception(
-                "Bad NPC config yaml file: %s", config_path
-            )  # TODO custom exception
+            raise BadNPCConfigError(config_path)
 
         for name, item in data.items():
             if not isinstance(item, list):
@@ -26,16 +29,12 @@ class Persona:
             elif name == "context":
                 self.context = item
             else:
-                raise Exception(
-                    "Bad NPC config yaml file: %s", config_path
-                )  # TODO custom exception
+                raise BadNPCConfigError(config_path)
         if (
             "username" not in self.unique_traits.keys()
             or "name" not in self.unique_traits.keys()
         ):
-            raise Exception(
-                "Bad NPC config yaml file: %s", config_path
-            )  # TODO custom exception
+            raise BadNPCConfigError(config_path)
         self.username: str = self.unique_traits["username"]
         self.name: str = self.unique_traits["name"]
 
@@ -43,6 +42,6 @@ class Persona:
         traits_str = "".join(
             [f"{name}: {trait}, " for name, trait in self.unique_traits.items()]
         )
-        personality_str = f"Personality traits: {', '.join(self.personality)}"  # TODO input error handling/testing
+        personality_str = f"Personality traits: {', '.join(self.personality)}"
         context_str = f"Additional context: {', '.join(self.context)}. "
         return traits_str + "\n" + personality_str + "\n" + context_str
