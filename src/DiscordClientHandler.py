@@ -118,3 +118,10 @@ class DiscordClientHandler(BaseClientHandler):
         return [
             ServerMsg.from_discord_message(message) async for message in chat_history
         ]
+
+    def message_is_from_user(self, message: discord.Message) -> bool:
+        if not isinstance(message, discord.Message):
+            raise TypeError("Message is not of type discord.Message")
+        if self.client.user is None:
+            raise discord.DiscordException("User not yet logged in.")
+        return message.author.id == self.client.user.id

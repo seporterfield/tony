@@ -41,7 +41,9 @@ class ClientNPCController:
 
     async def on_resumed(self):
         message = await self.client_handler.on_resumed(self.npc.chat_history)
-        if message is not None:
+        if message is not None and not self.client_handler.message_is_from_user(
+            message
+        ):
             await self.try_reply_to_message(message=message)
 
     async def on_message(self, message):

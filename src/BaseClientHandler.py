@@ -31,6 +31,10 @@ class BaseClientHandler(ABC):
         ...
 
     @abstractmethod
+    def message_is_from_user(self, message: Any) -> bool:
+        ...
+
+    @abstractmethod
     async def get_chat_history(self, message: Any) -> List[ServerMsg]:
         ...
 
